@@ -10,16 +10,15 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 
 export function Component() {
-  const [selectedDate, setSelectedDate] = useState("2023-06-17");
-  const [lightEnabled, setLightEnabled] = useState(false); // Inicialmente false
-  const [airEnabled, setAirEnabled] = useState(false); // Inicialmente false
+  const [selectedDate, setSelectedDate] = useState("2024-06-23");
+  const [lightEnabled, setLightEnabled] = useState(false);
+  const [airEnabled, setAirEnabled] = useState(false);
+  const [activityLogs, setActivityLogs] = useState([]);
 
-  // Fetch the initial state from the API when the component mounts
   useEffect(() => {
     const fetchDeviceStates = async () => {
       try {
         const response = await axios.get('https://pas-api.onrender.com/api/state');
-        // Actualizamos los estados de los switches según la respuesta de la API
         setLightEnabled(response.data.Light === 'ON');
         setAirEnabled(response.data.air === 'ON');
       } catch (error) {
@@ -27,15 +26,26 @@ export function Component() {
       }
     };
 
+    const fetchActivityLogs = async () => {
+      try {
+        const response = await axios.get('https://pas-api.onrender.com/api/state/log');
+        const reversedLogs = response.data.reverse();
+        setActivityLogs(reversedLogs);
+      } catch (error) {
+        console.error('Error fetching activity logs:', error.message, error.response?.data);
+      }
+    };
+
     fetchDeviceStates();
+    fetchActivityLogs();
   }, []);
 
-  // Update the device state in the API
   const updateDeviceState = async (device, state) => {
     try {
       await axios.put('https://pas-api.onrender.com/api/state', {
         [device]: state ? 'ON' : 'OFF'
       });
+      fetchActivityLogs();
     } catch (error) {
       console.error(`Error updating ${device} state:`, error);
     }
@@ -50,6 +60,8 @@ export function Component() {
     setAirEnabled(checked);
     updateDeviceState('air', checked);
   };
+
+  const filteredLogs = activityLogs.filter(log => log.date === selectedDate);
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -95,50 +107,28 @@ export function Component() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setSelectedDate("2023-06-17")}>2023-06-17</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setSelectedDate("2023-06-16")}>2023-06-16</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setSelectedDate("2023-06-15")}>2023-06-15</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setSelectedDate("2023-06-14")}>2023-06-14</DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => setSelectedDate("2023-06-13")}>2023-06-13</DropdownMenuItem>
+                {[...new Set(activityLogs.map(log => log.date))].map(date => (
+                  <DropdownMenuItem key={date} onSelect={() => setSelectedDate(date)}>
+                    {date}
+                  </DropdownMenuItem>
+                ))}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
           <div className="space-y-4">
-            {selectedDate === "2023-06-17" && (
-              <div className="bg-gray-100 rounded-lg p-4">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">2023-06-17</h3>
+            {filteredLogs.map((log, index) => (
+              <div key={index} className="bg-gray-100 rounded-lg p-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <ClockIcon className="h-5 w-5 text-gray-500" />
-                      <span className="text-gray-600">Dispositivo 1 activado</span>
+                      <span className="text-gray-600">{`${log.device} ${log.state}`}</span>
                     </div>
-                    <span className="text-gray-500 text-sm">10:00 AM</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <ClockIcon className="h-5 w-5 text-gray-500" />
-                      <span className="text-gray-600">Dispositivo 1 desactivado</span>
-                    </div>
-                    <span className="text-gray-500 text-sm">10:30 PM</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <ClockIcon className="h-5 w-5 text-gray-500" />
-                      <span className="text-gray-600">Dispositivo 2 activado</span>
-                    </div>
-                    <span className="text-gray-500 text-sm">11:00 AM</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <ClockIcon className="h-5 w-5 text-gray-500" />
-                      <span className="text-gray-600">Dispositivo 2 desactivado</span>
-                    </div>
-                    <span className="text-gray-500 text-sm">9:00 PM</span>
+                    <span className="text-gray-500 text-sm">{log.time}</span>
                   </div>
                 </div>
               </div>
-            )}
+            ))}
           </div>
         </div>
         <div className="bg-white rounded-lg shadow p-6 col-span-1 md:col-span-2">
@@ -205,7 +195,7 @@ function ChevronDownIcon(props) {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round">
-      <path d="m6 9 6 6 6-6" />
+      <polyline points="6 9 12 15 18 9" />
     </svg>
   );
 }
