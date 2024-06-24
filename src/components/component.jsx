@@ -62,6 +62,16 @@ export function Component() {
   };
 
   const filteredLogs = activityLogs.filter(log => log.date === selectedDate);
+  const getDeviceName = (deviceId) => {
+    switch (deviceId) {
+      case 'Light':
+        return 'Luces';
+      case 'air':
+        return 'Ventilador';
+      default:
+        return deviceId;
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
@@ -122,7 +132,7 @@ export function Component() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <ClockIcon className="h-5 w-5 text-gray-500" />
-                      <span className="text-gray-600">{`${log.device} ${log.state}`}</span>
+                      <span className="text-gray-600">{`${getDeviceName(log.device)} ${log.state}`}</span>
                     </div>
                     <span className="text-gray-500 text-sm">{log.time}</span>
                   </div>
