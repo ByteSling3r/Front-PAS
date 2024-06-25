@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Switch } from "@/components/ui/switch";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import Link from "next/link";
+import io from 'socket.io-client';
+import { Switch } from '@/components/ui/switch';
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import Link from 'next/link';
+
+const socket = io('http://192.168.101.78:5000');
 
 export function Component() {
-  const [selectedDate, setSelectedDate] = useState("2024-06-23");
+  const [selectedDate, setSelectedDate] = useState('2024-06-24');
   const [lightEnabled, setLightEnabled] = useState(false);
   const [airEnabled, setAirEnabled] = useState(false);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -18,7 +21,7 @@ export function Component() {
   useEffect(() => {
     const fetchDeviceStates = async () => {
       try {
-        const response = await axios.get('https://pas-api.onrender.com/api/state');
+        const response = await axios.get('http://192.168.101.78:5000/api/state');
         setLightEnabled(response.data.Light === 'ON');
         setAirEnabled(response.data.air === 'ON');
       } catch (error) {
@@ -28,7 +31,7 @@ export function Component() {
 
     const fetchActivityLogs = async () => {
       try {
-        const response = await axios.get('https://pas-api.onrender.com/api/state/log');
+        const response = await axios.get('http://192.168.101.78:5000/api/state/log');
         const reversedLogs = response.data.reverse();
         setActivityLogs(reversedLogs);
       } catch (error) {
@@ -38,14 +41,22 @@ export function Component() {
 
     fetchDeviceStates();
     fetchActivityLogs();
+
+    socket.on('state_updated', () => {
+      fetchDeviceStates();
+      fetchActivityLogs();
+    });
+
+    return () => {
+      socket.off('state_updated');
+    };
   }, []);
 
   const updateDeviceState = async (device, state) => {
     try {
-      await axios.put('https://pas-api.onrender.com/api/state', {
+      await axios.put('http://192.168.101.78:5000/api/state', {
         [device]: state ? 'ON' : 'OFF'
       });
-      fetchActivityLogs();
     } catch (error) {
       console.error(`Error updating ${device} state:`, error);
     }
@@ -94,6 +105,24 @@ export function Component() {
             />
           </div>
           <p className="text-gray-600 mb-6">Activa o desactiva las Luces.</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Programación</h2>
+          <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label htmlFor="on-time" className="text-gray-600">
+                Hora de encendido
+              </Label>
+              <Input id="on-time" type="time" className="mt-1" defaultValue="07:00" />
+            </div>
+            <div>
+              <Label htmlFor="off-time" className="text-gray-600">
+                Hora de apagado
+              </Label>
+              <Input id="off-time" type="time" className="mt-1" defaultValue="22:00" />
+            </div>
+            <div className="col-span-1 md:col-span-2">
+              <Button className="w-full">Guardar programación</Button>
+            </div>
+          </form>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
@@ -105,6 +134,24 @@ export function Component() {
             />
           </div>
           <p className="text-gray-600 mb-6">Activa o desactiva el Ventilador.</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Programación</h2>
+          <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label htmlFor="on-time" className="text-gray-600">
+                Hora de encendido
+              </Label>
+              <Input id="on-time" type="time" className="mt-1" defaultValue="07:00" />
+            </div>
+            <div>
+              <Label htmlFor="off-time" className="text-gray-600">
+                Hora de apagado
+              </Label>
+              <Input id="off-time" type="time" className="mt-1" defaultValue="22:00" />
+            </div>
+            <div className="col-span-1 md:col-span-2">
+              <Button className="w-full">Guardar programación</Button>
+            </div>
+          </form>
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
@@ -141,29 +188,9 @@ export function Component() {
             ))}
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6 col-span-1 md:col-span-2">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Programación</h2>
-          <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <Label htmlFor="on-time" className="text-gray-600">
-                Hora de encendido
-              </Label>
-              <Input id="on-time" type="time" className="mt-1" defaultValue="07:00" />
-            </div>
-            <div>
-              <Label htmlFor="off-time" className="text-gray-600">
-                Hora de apagado
-              </Label>
-              <Input id="off-time" type="time" className="mt-1" defaultValue="22:00" />
-            </div>
-            <div className="col-span-1 md:col-span-2">
-              <Button className="w-full">Guardar programación</Button>
-            </div>
-          </form>
-        </div>
       </main>
       <footer className="bg-white shadow">
-        <div className="container mx-auto py-4 px-6 flex items-center justify-between">
+        <div className="container mx-auto py-4 px-6 flex items-center justify-center">
           <p className="text-gray-600 text-sm">&copy; 2024 Control IoT. Todos los derechos reservados.</p>
           <div className="flex items-center gap-4"></div>
         </div>
