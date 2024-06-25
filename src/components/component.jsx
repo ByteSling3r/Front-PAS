@@ -13,7 +13,7 @@ import Link from 'next/link';
 const socket = io('http://192.168.101.78:5000');
 
 export function Component() {
-  const [selectedDate, setSelectedDate] = useState('2024-06-24');
+  const [selectedDate, setSelectedDate] = useState('2024-06-25');
   const [lightEnabled, setLightEnabled] = useState(false);
   const [airEnabled, setAirEnabled] = useState(false);
   const [activityLogs, setActivityLogs] = useState([]);
@@ -21,7 +21,7 @@ export function Component() {
   useEffect(() => {
     const fetchDeviceStates = async () => {
       try {
-        const response = await axios.get('http://192.168.101.78:5000/api/state');
+        const response = await axios.get('https://pas-api.onrender.com/api/state');
         setLightEnabled(response.data.Light === 'ON');
         setAirEnabled(response.data.air === 'ON');
       } catch (error) {
@@ -31,7 +31,7 @@ export function Component() {
 
     const fetchActivityLogs = async () => {
       try {
-        const response = await axios.get('http://192.168.101.78:5000/api/state/log');
+        const response = await axios.get('https://pas-api.onrender.com/api/state/log');
         const reversedLogs = response.data.reverse();
         setActivityLogs(reversedLogs);
       } catch (error) {
@@ -54,7 +54,7 @@ export function Component() {
 
   const updateDeviceState = async (device, state) => {
     try {
-      await axios.put('http://192.168.101.78:5000/api/state', {
+      await axios.put('https://pas-api.onrender.com/api/state', {
         [device]: state ? 'ON' : 'OFF'
       });
     } catch (error) {
