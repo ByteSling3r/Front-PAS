@@ -10,7 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
-const socket = io('http://192.168.101.78:5000');
+const socket = io('https://pas-api.onrender.com', {
+  transports: ['websocket'],
+  withCredentials: true,
+});
+
 
 export function Component() {
   const [selectedDate, setSelectedDate] = useState('2024-06-25');
