@@ -11,16 +11,35 @@ import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
 const socket = io('https://pas-api.onrender.com', {
-  transports: ['websocket'],
-  withCredentials: true,
+  transports: ['websocket']
 });
 
-
 export function Component() {
-  const [selectedDate, setSelectedDate] = useState('2024-06-25');
   const [lightEnabled, setLightEnabled] = useState(false);
   const [airEnabled, setAirEnabled] = useState(false);
   const [activityLogs, setActivityLogs] = useState([]);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [manualChangesBlocked, setManualChangesBlocked] = useState(false);
+  const [onTime, setOnTime] = useState('07:00');
+  const [offTime, setOffTime] = useState('22:00');
+
+  useEffect(() => {
+    const getCurrentDate = () => {
+      const date = new Date();
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    setSelectedDate(getCurrentDate());
+
+    const interval = setInterval(() => {
+      setSelectedDate(getCurrentDate());
+    }, 86400000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const fetchDeviceStates = async () => {
@@ -67,13 +86,50 @@ export function Component() {
   };
 
   const handleLightSwitchChange = (checked) => {
-    setLightEnabled(checked);
-    updateDeviceState('Light', checked);
+    if (!manualChangesBlocked) {
+      setLightEnabled(checked);
+      updateDeviceState('Light', checked);
+    }
   };
 
   const handleAirSwitchChange = (checked) => {
-    setAirEnabled(checked);
-    updateDeviceState('air', checked);
+    if (!manualChangesBlocked) {
+      setAirEnabled(checked);
+      updateDeviceState('air', checked);
+    }
+  };
+
+  const handleProgrammingSubmit = async (event, deviceName) => {
+    event.preventDefault();
+    const onTime = event.target['on-time'].value;
+    const offTime = event.target['off-time'].value;
+    setOnTime(onTime);
+    setOffTime(offTime);
+    try {
+      await axios.post('https://pas-api.onrender.com/api/programming', {
+        device_name: deviceName,
+        on_time: onTime,
+        off_time: offTime
+      });
+      setManualChangesBlocked(true);
+      setTimeout(() => {
+        setManualChangesBlocked(false);
+      }, calculateTimeDifference(onTime, offTime));
+    } catch (error) {
+      console.error('Error sending programming data:', error);
+    }
+  };
+  
+
+
+  const calculateTimeDifference = (start, end) => {
+    const [startHour, startMinute] = start.split(':').map(Number);
+    const [endHour, endMinute] = end.split(':').map(Number);
+    const startTime = new Date();
+    startTime.setHours(startHour, startMinute, 0, 0);
+    const endTime = new Date();
+    endTime.setHours(endHour, endMinute, 0, 0);
+    return endTime - startTime;
   };
 
   const filteredLogs = activityLogs.filter(log => log.date === selectedDate);
@@ -106,27 +162,29 @@ export function Component() {
               id="light-switch"
               checked={lightEnabled}
               onCheckedChange={handleLightSwitchChange}
+              disabled={manualChangesBlocked} // Deshabilitar si está bloqueado
             />
           </div>
           <p className="text-gray-600 mb-6">Activa o desactiva las Luces.</p>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Programación</h2>
-          <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={(e) => handleProgrammingSubmit(e, 'Light')}>
             <div>
               <Label htmlFor="on-time" className="text-gray-600">
                 Hora de encendido
               </Label>
-              <Input id="on-time" type="time" className="mt-1" defaultValue="07:00" />
+              <Input id="on-time" name="on-time" type="time" className="mt-1" defaultValue="07:00" />
             </div>
             <div>
               <Label htmlFor="off-time" className="text-gray-600">
                 Hora de apagado
               </Label>
-              <Input id="off-time" type="time" className="mt-1" defaultValue="22:00" />
+              <Input id="off-time" name="off-time" type="time" className="mt-1" defaultValue="22:00" />
             </div>
             <div className="col-span-1 md:col-span-2">
-              <Button className="w-full">Guardar programación</Button>
+              <Button type="submit" className="w-full">Guardar programación</Button>
             </div>
           </form>
+
         </div>
         <div className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
@@ -135,25 +193,26 @@ export function Component() {
               id="air-switch"
               checked={airEnabled}
               onCheckedChange={handleAirSwitchChange}
+              disabled={manualChangesBlocked} // Deshabilitar si está bloqueado
             />
           </div>
           <p className="text-gray-600 mb-6">Activa o desactiva el Ventilador.</p>
           <h2 className="text-xl font-bold text-gray-900 mb-4">Programación</h2>
-          <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form className="grid grid-cols-1 md:grid-cols-2 gap-6" onSubmit={(e) => handleProgrammingSubmit(e, 'air')}>
             <div>
               <Label htmlFor="on-time" className="text-gray-600">
                 Hora de encendido
               </Label>
-              <Input id="on-time" type="time" className="mt-1" defaultValue="07:00" />
+              <Input id="on-time" name="on-time" type="time" className="mt-1" defaultValue="07:00" />
             </div>
             <div>
               <Label htmlFor="off-time" className="text-gray-600">
                 Hora de apagado
               </Label>
-              <Input id="off-time" type="time" className="mt-1" defaultValue="22:00" />
+              <Input id="off-time" name="off-time" type="time" className="mt-1" defaultValue="22:00" />
             </div>
             <div className="col-span-1 md:col-span-2">
-              <Button className="w-full">Guardar programación</Button>
+              <Button type="submit" className="w-full">Guardar programación</Button>
             </div>
           </form>
         </div>
