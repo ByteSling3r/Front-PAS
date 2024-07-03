@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 
-const socket = io('https://pas-api.onrender.com', {
+const socket = io('https://dad3be85-1cb5-490c-9006-f6c528607b73-00-2tw3gj9c7wswc.picard.replit.dev', {
   transports: ['websocket']
 });
 
@@ -44,7 +44,7 @@ export function Component() {
   useEffect(() => {
     const fetchDeviceStates = async () => {
       try {
-        const response = await axios.get('https://pas-api.onrender.com/api/state');
+        const response = await axios.get('https://dad3be85-1cb5-490c-9006-f6c528607b73-00-2tw3gj9c7wswc.picard.replit.dev/api/state');
         setLightEnabled(response.data.Light === 'ON');
         setAirEnabled(response.data.air === 'ON');
       } catch (error) {
@@ -54,7 +54,7 @@ export function Component() {
 
     const fetchActivityLogs = async () => {
       try {
-        const response = await axios.get('https://pas-api.onrender.com/api/state/log');
+        const response = await axios.get('https://dad3be85-1cb5-490c-9006-f6c528607b73-00-2tw3gj9c7wswc.picard.replit.dev/api/state/log');
         const reversedLogs = response.data.reverse();
         setActivityLogs(reversedLogs);
       } catch (error) {
@@ -77,7 +77,7 @@ export function Component() {
 
   const updateDeviceState = async (device, state) => {
     try {
-      await axios.put('https://pas-api.onrender.com/api/state', {
+      await axios.put('https://dad3be85-1cb5-490c-9006-f6c528607b73-00-2tw3gj9c7wswc.picard.replit.dev/api/state', {
         [device]: state ? 'ON' : 'OFF'
       });
     } catch (error) {
@@ -106,7 +106,7 @@ export function Component() {
     setOnTime(onTime);
     setOffTime(offTime);
     try {
-      await axios.post('https://pas-api.onrender.com/api/programming', {
+      await axios.post('https://dad3be85-1cb5-490c-9006-f6c528607b73-00-2tw3gj9c7wswc.picard.replit.dev/api/programming', {
         device_name: deviceName,
         on_time: onTime,
         off_time: offTime
